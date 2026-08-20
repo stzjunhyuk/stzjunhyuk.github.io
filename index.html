@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DEAD FIELDS — 죽은 들판</title>
+  <script type="module" crossorigin src="./assets/index-CJUzm5b6.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-M8cNt_gC.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="c"></canvas>
+
+    <!-- ===================== HUD ===================== -->
+    <div id="hud" class="hidden">
+      <div id="vignette"></div>
+      <div id="lowhp-overlay"></div>
+      <div id="dmg-indicators">
+        <div class="dmg-ind" id="dmg-n"></div>
+        <div class="dmg-ind" id="dmg-e"></div>
+        <div class="dmg-ind" id="dmg-s"></div>
+        <div class="dmg-ind" id="dmg-w"></div>
+      </div>
+
+      <div id="crosshair">
+        <span class="ch ch-t"></span><span class="ch ch-b"></span>
+        <span class="ch ch-l"></span><span class="ch ch-r"></span>
+        <span class="ch-dot"></span>
+      </div>
+      <div id="hitmarker"></div>
+
+      <div id="objective-box">
+        <div class="obj-label">목표</div>
+        <div id="objective-text"></div>
+      </div>
+
+      <div id="notify-stack"></div>
+
+      <div id="interact-prompt" class="hidden">
+        <div id="interact-key">E</div>
+        <div id="interact-text"></div>
+        <div id="interact-hold"><div id="interact-hold-fill"></div></div>
+      </div>
+
+      <div id="vitals">
+        <div class="bar-row">
+          <span class="bar-icon">✚</span>
+          <div class="bar"><div id="hp-fill"></div></div>
+        </div>
+        <div class="bar-row">
+          <span class="bar-icon">▶</span>
+          <div class="bar bar-sm"><div id="st-fill"></div></div>
+        </div>
+        <div id="meds-row">회복팩 <span id="meds-count">0</span> <span class="hint">[Q]</span></div>
+      </div>
+
+      <div id="ammo-box">
+        <div id="weapon-name"></div>
+        <div id="ammo-count"><span id="ammo-mag">--</span><span id="ammo-sep">/</span><span id="ammo-reserve">--</span></div>
+        <div id="reload-hint" class="hidden">재장전 [R]</div>
+      </div>
+    </div>
+
+    <!-- ===================== NOTE OVERLAY ===================== -->
+    <div id="note-overlay" class="overlay hidden">
+      <div class="note-paper">
+        <div id="note-title"></div>
+        <div id="note-body"></div>
+        <div class="note-close">[E] 또는 [Esc] 닫기</div>
+      </div>
+    </div>
+
+    <!-- ===================== TAB OVERLAY ===================== -->
+    <div id="tab-overlay" class="overlay hidden">
+      <div class="tab-panel">
+        <h3>현재 목표</h3>
+        <div id="tab-objective"></div>
+        <h3>장비</h3>
+        <div id="tab-weapons"></div>
+        <h3>탄약</h3>
+        <div id="tab-ammo"></div>
+        <h3>소지품</h3>
+        <div id="tab-items"></div>
+      </div>
+    </div>
+
+    <!-- ===================== MAIN MENU ===================== -->
+    <div id="menu-main" class="screen">
+      <div class="menu-inner">
+        <h1 class="title">DEAD FIELDS</h1>
+        <div class="subtitle">— 죽은 들판 —</div>
+        <div class="menu-buttons">
+          <button id="btn-continue" class="mbtn hidden">이어하기</button>
+          <button id="btn-new" class="mbtn">새 게임</button>
+          <div id="stage-select-row" class="hidden">
+            <div class="small-label">스테이지 선택</div>
+            <div id="stage-buttons"></div>
+          </div>
+          <div class="diff-row">
+            <div class="small-label">난이도</div>
+            <div class="diff-buttons">
+              <button class="dbtn" data-diff="easy">쉬움</button>
+              <button class="dbtn selected" data-diff="normal">보통</button>
+              <button class="dbtn" data-diff="hard">어려움</button>
+            </div>
+          </div>
+          <button id="btn-options" class="mbtn mbtn-sm">설정</button>
+          <button id="btn-controls" class="mbtn mbtn-sm">조작 방법</button>
+        </div>
+        <div class="menu-foot">낮은 채도의 들판, 부족한 탄약, 그리고 걸어오는 것들.</div>
+      </div>
+    </div>
+
+    <!-- ===================== OPTIONS ===================== -->
+    <div id="menu-options" class="screen hidden">
+      <div class="menu-inner panel">
+        <h2>설정</h2>
+        <div class="opt-row"><label>마우스 감도</label><input type="range" id="opt-sens" min="0.2" max="3" step="0.05"><span id="opt-sens-v"></span></div>
+        <div class="opt-row"><label>전체 음량</label><input type="range" id="opt-master" min="0" max="1" step="0.05"><span id="opt-master-v"></span></div>
+        <div class="opt-row"><label>효과음</label><input type="range" id="opt-sfx" min="0" max="1" step="0.05"><span id="opt-sfx-v"></span></div>
+        <div class="opt-row"><label>음악</label><input type="range" id="opt-music" min="0" max="1" step="0.05"><span id="opt-music-v"></span></div>
+        <div class="opt-row"><label>시야각 (FOV)</label><input type="range" id="opt-fov" min="60" max="100" step="1"><span id="opt-fov-v"></span></div>
+        <div class="opt-row"><label>카메라 흔들림 감소</label><input type="checkbox" id="opt-shake"></div>
+        <div class="opt-row"><label>그래픽 품질</label>
+          <div class="diff-buttons">
+            <button class="pbtn" data-perf="low">낮음</button>
+            <button class="pbtn" data-perf="medium">보통</button>
+            <button class="pbtn" data-perf="high">높음</button>
+          </div>
+        </div>
+        <button id="btn-options-back" class="mbtn mbtn-sm">돌아가기</button>
+      </div>
+    </div>
+
+    <!-- ===================== CONTROLS ===================== -->
+    <div id="menu-controls" class="screen hidden">
+      <div class="menu-inner panel">
+        <h2>조작 방법</h2>
+        <table class="ctrl-table">
+          <tr><td>W A S D</td><td>이동</td></tr>
+          <tr><td>마우스</td><td>시점 회전</td></tr>
+          <tr><td>좌클릭</td><td>공격 / 발사</td></tr>
+          <tr><td>우클릭 (유지)</td><td>조준</td></tr>
+          <tr><td>R</td><td>재장전</td></tr>
+          <tr><td>E</td><td>상호작용 (일부는 길게)</td></tr>
+          <tr><td>Shift</td><td>달리기 (스태미나 소모)</td></tr>
+          <tr><td>Ctrl / C</td><td>앉기</td></tr>
+          <tr><td>1 ~ 4</td><td>무기 교체 (1 근접 / 2 권총 / 3 장총 / 4 기관단총)</td></tr>
+          <tr><td>마우스 휠</td><td>무기 순환</td></tr>
+          <tr><td>Q</td><td>회복팩 사용</td></tr>
+          <tr><td>F</td><td>손전등</td></tr>
+          <tr><td>Tab</td><td>목표 / 소지품 확인</td></tr>
+          <tr><td>Esc</td><td>일시정지</td></tr>
+        </table>
+        <button id="btn-controls-back" class="mbtn mbtn-sm">돌아가기</button>
+      </div>
+    </div>
+
+    <!-- ===================== STAGE INTRO ===================== -->
+    <div id="screen-intro" class="screen hidden">
+      <div class="intro-inner">
+        <div id="intro-stage-no"></div>
+        <h2 id="intro-title"></h2>
+        <div id="intro-text"></div>
+        <div class="intro-start">클릭하여 시작</div>
+      </div>
+    </div>
+
+    <!-- ===================== PAUSE ===================== -->
+    <div id="screen-pause" class="screen hidden">
+      <div class="menu-inner panel">
+        <h2>일시정지</h2>
+        <button id="btn-resume" class="mbtn">계속하기</button>
+        <button id="btn-restart-cp" class="mbtn mbtn-sm">체크포인트에서 재시작</button>
+        <button id="btn-pause-options" class="mbtn mbtn-sm">설정</button>
+        <button id="btn-pause-controls" class="mbtn mbtn-sm">조작 방법</button>
+        <button id="btn-quit" class="mbtn mbtn-sm">메인 메뉴로</button>
+      </div>
+    </div>
+
+    <!-- ===================== GAME OVER ===================== -->
+    <div id="screen-dead" class="screen hidden">
+      <div class="menu-inner">
+        <h1 class="dead-title">사망</h1>
+        <div id="dead-tip" class="dead-tip"></div>
+        <button id="btn-dead-restart" class="mbtn">체크포인트에서 재시작</button>
+        <button id="btn-dead-menu" class="mbtn mbtn-sm">메인 메뉴로</button>
+      </div>
+    </div>
+
+    <!-- ===================== STAGE CLEAR ===================== -->
+    <div id="screen-clear" class="screen hidden">
+      <div class="menu-inner">
+        <h2 class="clear-title">스테이지 완료</h2>
+        <div id="clear-stats"></div>
+        <button id="btn-next-stage" class="mbtn">계속 이동한다</button>
+        <button id="btn-clear-menu" class="mbtn mbtn-sm">메인 메뉴로</button>
+      </div>
+    </div>
+
+    <!-- ===================== ENDING ===================== -->
+    <div id="screen-ending" class="screen hidden">
+      <div class="menu-inner">
+        <div id="ending-text"></div>
+        <button id="btn-ending-menu" class="mbtn hidden">메인 메뉴로</button>
+      </div>
+    </div>
+
+    <div id="fade"></div>
+  </div>
+
+</body>
+</html>
